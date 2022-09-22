@@ -1,7 +1,11 @@
 const { typescript } = require('projen');
+const { NpmAccess } = require('projen/lib/javascript');
 const project = new typescript.TypeScriptProject({
   defaultReleaseBranch: 'main',
   name: 'cfn-diff',
+  release: true,
+  releaseToNpm: true,
+  npmAccess: NpmAccess.PUBLIC,
   deps: [
     'yargs',
     '@types/yargs',
