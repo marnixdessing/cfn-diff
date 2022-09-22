@@ -1,1 +1,1 @@
-# replace this
+# CloudFormation Diff Tool (cfn-diff)
