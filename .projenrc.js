@@ -1,6 +1,6 @@
 const { typescript } = require('projen');
 const { NpmAccess } = require('projen/lib/javascript');
-const project = new typescript.TypeScriptProject({
+const project = new typescript.TypeScriptAppProject({
   defaultReleaseBranch: 'main',
   name: 'cfn-diff',
   release: true,
