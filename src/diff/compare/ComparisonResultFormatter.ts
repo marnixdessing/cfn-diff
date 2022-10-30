@@ -1,13 +1,15 @@
-import { ComparisonResult, ComparisonResults } from './ComparisonResult';
+import { CloudAssemblyResult, TemplateResult } from './ComparisonResult';
 
 
 export class ComparisonResultFormatter {
 
-  static format(result: ComparisonResults, format: 'text' | 'json') {
+  static readonly SPACE = '    ';
+
+  static format(result: CloudAssemblyResult[], format: 'text' | 'json') {
     if (format == 'json') {
       return JSON.stringify(result, null, 4);
     }
-    return this.resultToText(result.getDiffs(), 0);
+    return this.formatCloudAssemblyResult(result, 0);
   }
 
   static formatChangeType(changeType: string) {
@@ -27,23 +29,48 @@ export class ComparisonResultFormatter {
     return type.charAt(0).toUpperCase() + type.substring(1).toLowerCase();
   }
 
-  static resultToText(results: ComparisonResult[], indent: number) {
-    return results.map(diff => {
-      return this.diffToText(diff, indent);
-    }).join('\n');
-  }
-
-  static diffToText(diff: ComparisonResult, indent: number) {
-    const empty = '    '.repeat(indent);
-    const prefix = this.formatChangeType(diff.changeType);
-    const type = this.formatType(diff.type);
-    var line = `${empty}[${prefix}] ${type}: ${diff.identifier}`;
-    if (diff.changes) {
-      const lines = this.resultToText(diff.changes, indent + 1);
-      line = `${line}\n${lines}`;
+  static formatCloudAssemblyResult(results: CloudAssemblyResult[], indent: number) {
+    const lines = [];
+    const space = this.SPACE.repeat(indent);
+    for (let result of results) {
+      if (result.exclude) continue;
+      let icon = '+';
+      let t = undefined;
+      if (result.changes) { // changes
+        t = this.formatTemplateResult(result.changes, indent+1);
+        icon = '~';
+      } else if (!result.pathA && result.pathB) { // New
+        icon = '+';
+      } else if (result.pathA && !result.pathB) { // Deleted
+        icon = '-';
+      }
+      const line = `${space}[${icon}] ${result.basename}`;
+      lines.push(line);
+      if (t) {
+        lines.push(t);
+      }
     }
-    return line;
+    return lines.join('\n');
   }
 
+  static formatTemplateResult(results: TemplateResult[], indent: number) {
+    const space = this.SPACE.repeat(indent);
+    const lines = [];
+    for (let result of results) {
+      if (result.exclude) continue;
+      let icon = '+';
+      if (result.a && result.b) { // Changed
+        icon = '~';
+      } else if (!result.a && result.b) { // New
+        icon = '+';
+      } else if (result.a && !result.b) { // Deleted
+        icon = '-';
+      }
+      const line = `${space}[${icon}] ${result.identifier}`;
+      lines.push(line);
+    }
+
+    return lines.join('\n');
+  }
 
 }

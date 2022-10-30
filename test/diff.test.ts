@@ -1,9 +1,12 @@
-
 import fs from 'fs';
 import { CloudAssemblyComperator } from '../src/diff/CloudAssemblyComperator';
-import { ComparisonResults, ComparisonResult } from '../src/diff/compare/ComparisonResult';
-import { CFTemplate } from '../src/diff/template/CFTemplate';
-import { CFTemplateComperator } from '../src/diff/template/CFTemplateComperator';
+// import { ChangeType } from '../src/diff/compare/ComparisonResult';
+import { ComparisonResultFormatter } from '../src/diff/compare/ComparisonResultFormatter';
+// import { ComparisonResults, ComparisonResult } from '../src/diff/compare/ComparisonResult';
+// import { CFTemplate } from '../src/diff/template/CFTemplate';
+// import { CFTemplateComperator } from '../src/diff/template/CFTemplateComperator';
+// import { CloudAssemblyDiffFilter } from '../src/diff/filter/CloudAssemblyDiffFilter';
+import { ImpactPredictor } from '../src/diff/predict/Predict';
 import { TestTemplateBuilder } from './TestTemplateBuilder';
 
 const CLOUD_ASSEMBLY_DIR = './test/templates';
@@ -16,23 +19,23 @@ function createDir(dir: string) {
   }
 }
 
-function expectContainsChange(diff: ComparisonResults | ComparisonResult[], identifier: string, changeType: string, type: string) {
-  const input = diff instanceof ComparisonResults ? diff.getDiffs() : diff;
-  const found = input.find(c => c.identifier.endsWith(identifier) && c.changeType == changeType && c.type == type);
-  expect(found).not.toBeUndefined();
-  return found;
-}
+// function expectContainsChange(diff: ComparisonResults | ComparisonResult[], identifier: string, changeType: string, type: string) {
+//   const input = diff instanceof ComparisonResults ? diff.getDiffs() : diff;
+//   const found = input.find(c => c.identifier.endsWith(identifier) && c.changeType == changeType && c.type == type);
+//   expect(found).not.toBeUndefined();
+//   return found;
+// }
 
-function logDiff(diff:any) {
-  console.log(JSON.stringify(diff, null, 4));
-}
+// function logDiff(diff:any) {
+//   console.log(JSON.stringify(diff, null, 4));
+// }
 
-function compareTemplates(temp1: string, temp2:string) {
-  return new CFTemplateComperator({
-    templateA: new CFTemplate(CLOUD_ASSEMBLY_DIR + temp1),
-    templateB: new CFTemplate(CLOUD_ASSEMBLY_DIR + temp2),
-  }).compare();
-}
+// function compareTemplates(temp1: string, temp2:string) {
+//   return new CFTemplateComperator({
+//     templateA: new CFTemplate(CLOUD_ASSEMBLY_DIR + temp1),
+//     templateB: new CFTemplate(CLOUD_ASSEMBLY_DIR + temp2),
+//   }).compare();
+// }
 
 beforeAll(() => {
   // Create cloud assembly mockup data structure
@@ -89,12 +92,12 @@ beforeAll(() => {
 
   // Fill cdk.out dirs!
   new TestTemplateBuilder() // Template in main dir
-    .addResource('ResourceA', 'AWS::CF::Dummy')
+    .addResource('ResourceA', 'AWS::S3::Bucket', { prop1: 123 })
     .addResource('ResourceB', 'AWS::CF::Dummy')
     .save(CLOUD_ASSEMBLY_OUT_DIR(1) + '/base.template.json');
 
   new TestTemplateBuilder() // Changed compared to cdk.out.1
-    .addResource('ResourceA', 'AWS::CF::Dummy')
+    .addResource('ResourceA', 'AWS::S3::Bucket', { prop1: 'bla' })
     .addResource('ResourceC', 'AWS::CF::Dummy')
     .save(CLOUD_ASSEMBLY_OUT_DIR(2) + '/base.template.json');
 
@@ -118,107 +121,121 @@ beforeAll(() => {
     .addResource('ResourceZ', 'AWS::CF::Dummy')
     .save(CLOUD_ASSEMBLY_OUT_DIR_SUB(2) + '/sub.template.json');
 
-  // Setup logging
-  logDiff({ 'Diffs will be neatly printed': 'like this' });
-
 });
 
-test('Template comparator with same template twice', () => {
-  const diff = compareTemplates('/base.json', '/base.json');
-  expect(diff.nrOfDiffs()).toBe(0);
-  expect(diff.foundDiff()).toBe(false);
+beforeEach(() => {
+  process.env.DEBUG = 'true';
 });
 
-test('Compare change in template', () => {
-  const diff = compareTemplates('/base.json', '/base_change.json');
-  expect(diff.nrOfDiffs()).toBe(1);
-  expect(diff.foundDiff()).toBe(true);
-  expectContainsChange(diff, 'ResourceA', 'changed', 'resource');
-});
-
-test('Compare addition in template', () => {
-  const diff = compareTemplates('/base.json', '/base_addition.json');
-  expect(diff.nrOfDiffs()).toBe(1);
-  expectContainsChange(diff, 'ResourceC', 'new', 'resource');
-});
-
-test('Compare deletion in template', () => {
-  const diff = compareTemplates('/base.json', '/base_deletion.json');
-  expect(diff.nrOfDiffs()).toBe(1);
-  expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
-});
-
-test('Compare multiple chagnes in template', () => {
-  const diff = compareTemplates('/base.json', '/base_multiple.json');
-  expect(diff.nrOfDiffs()).toBe(3);
-  expectContainsChange(diff, 'ResourceA', 'changed', 'resource');
-  expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
-  expectContainsChange(diff, 'ResourceC', 'new', 'resource');
-});
-
-test('base vs empty', () => {
-  const diff = compareTemplates('/base.json', '/empty.json');
-  expect(diff.nrOfDiffs()).toBe(2);
-  expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
-  expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
-});
-
-test('base vs param only', () => {
-  const diff = compareTemplates('/base.json', '/param_only.json');
-  expect(diff.nrOfDiffs()).toBe(3);
-  expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
-  expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
-  expectContainsChange(diff, 'ParamA', 'new', 'parameter');
-});
-
-test('base vs output only', () => {
-  const diff = compareTemplates('/base.json', '/output_only.json');
-  expect(diff.nrOfDiffs()).toBe(3);
-  expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
-  expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
-  expectContainsChange(diff, 'OutputA', 'new', 'output');
-});
-
-test('base vs rule only', () => {
-  const diff = compareTemplates('/base.json', '/rule_only.json');
-  expect(diff.nrOfDiffs()).toBe(3);
-  expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
-  expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
-  expectContainsChange(diff, 'RuleA', 'new', 'rule');
-});
-
-test('full directory same', () => {
-  const dir = CLOUD_ASSEMBLY_DIR + '/cdk.out.1';
-  const diff = new CloudAssemblyComperator({
-    cloudAssemblyDirectoryA: dir,
-    cloudAssemblyDirectoryB: dir,
-  }).compare();
-  expect(diff.nrOfDiffs()).toBe(0);
-  expect(diff.foundDiff()).toBe(false);
-});
-
-test('two different directories', () => {
+test('cdk out', () => {
   const diff = new CloudAssemblyComperator({
     cloudAssemblyDirectoryA: CLOUD_ASSEMBLY_OUT_DIR(1),
     cloudAssemblyDirectoryB: CLOUD_ASSEMBLY_OUT_DIR(2),
   }).compare();
+  console.log(JSON.stringify(diff, null, 4));
 
-  expect(diff.nrOfDiffs()).toBe(4);
-  expect(diff.foundDiff()).toBe(true);
-  expectContainsChange(diff, 'cdk.out.2/new.template.json', 'new', 'template');
-  expectContainsChange(diff, 'cdk.out.1/subdir/sub2.template.json', 'deleted', 'template');
-  const diff1 = expectContainsChange(diff, '/subdir/sub.template.json', 'changed', 'template');
-  const diff2 = expectContainsChange(diff, '/base.template.json', 'changed', 'template');
-  expect(diff1?.changes).not.toBeUndefined();
-  if (diff1?.changes) {
-    expectContainsChange(diff1.changes, 'ResourceY', 'deleted', 'resource');
-    expectContainsChange(diff1.changes, 'ResourceY', 'deleted', 'resource');
-  }
-  expect(diff2?.changes).not.toBeUndefined();
-  if (diff2?.changes) {
-    expectContainsChange(diff2.changes, 'ResourceB', 'deleted', 'resource');
-    expectContainsChange(diff2.changes, 'ResourceC', 'new', 'resource');
-  }
+  ImpactPredictor.predict(diff);
+
+  const output1 = ComparisonResultFormatter.format(diff, 'text');
+  console.log(output1);
+
+
 });
 
+// test('Template comparator with same template twice', () => {
+//   const diff = compareTemplates('/base.json', '/base.json');
+//   expect(diff.nrOfDiffs()).toBe(0);
+//   expect(diff.foundDiff()).toBe(false);
+// });
 
+// test('Compare change in template', () => {
+//   const diff = compareTemplates('/base.json', '/base_change.json');
+//   expect(diff.nrOfDiffs()).toBe(1);
+//   expect(diff.foundDiff()).toBe(true);
+//   expectContainsChange(diff, 'ResourceA', 'changed', 'resource');
+// });
+
+// test('Compare addition in template', () => {
+//   const diff = compareTemplates('/base.json', '/base_addition.json');
+//   expect(diff.nrOfDiffs()).toBe(1);
+//   expectContainsChange(diff, 'ResourceC', 'new', 'resource');
+// });
+
+// test('Compare deletion in template', () => {
+//   const diff = compareTemplates('/base.json', '/base_deletion.json');
+//   expect(diff.nrOfDiffs()).toBe(1);
+//   expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
+// });
+
+// test('Compare multiple chagnes in template', () => {
+//   const diff = compareTemplates('/base.json', '/base_multiple.json');
+//   expect(diff.nrOfDiffs()).toBe(3);
+//   expectContainsChange(diff, 'ResourceA', 'changed', 'resource');
+//   expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
+//   expectContainsChange(diff, 'ResourceC', 'new', 'resource');
+// });
+
+// test('base vs empty', () => {
+//   const diff = compareTemplates('/base.json', '/empty.json');
+//   expect(diff.nrOfDiffs()).toBe(2);
+//   expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
+//   expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
+// });
+
+// test('base vs param only', () => {
+//   const diff = compareTemplates('/base.json', '/param_only.json');
+//   expect(diff.nrOfDiffs()).toBe(3);
+//   expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
+//   expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
+//   expectContainsChange(diff, 'ParamA', 'new', 'parameter');
+// });
+
+// test('base vs output only', () => {
+//   const diff = compareTemplates('/base.json', '/output_only.json');
+//   expect(diff.nrOfDiffs()).toBe(3);
+//   expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
+//   expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
+//   expectContainsChange(diff, 'OutputA', 'new', 'output');
+// });
+
+// test('base vs rule only', () => {
+//   const diff = compareTemplates('/base.json', '/rule_only.json');
+//   expect(diff.nrOfDiffs()).toBe(3);
+//   expectContainsChange(diff, 'ResourceA', 'deleted', 'resource');
+//   expectContainsChange(diff, 'ResourceB', 'deleted', 'resource');
+//   expectContainsChange(diff, 'RuleA', 'new', 'rule');
+// });
+
+// test('full directory same', () => {
+//   const dir = CLOUD_ASSEMBLY_DIR + '/cdk.out.1';
+//   const diff = new CloudAssemblyComperator({
+//     cloudAssemblyDirectoryA: dir,
+//     cloudAssemblyDirectoryB: dir,
+//   }).compare();
+//   expect(diff.nrOfDiffs()).toBe(0);
+//   expect(diff.foundDiff()).toBe(false);
+// });
+
+// test('two different directories', () => {
+//   const diff = new CloudAssemblyComperator({
+//     cloudAssemblyDirectoryA: CLOUD_ASSEMBLY_OUT_DIR(1),
+//     cloudAssemblyDirectoryB: CLOUD_ASSEMBLY_OUT_DIR(2),
+//   }).compare();
+
+//   expect(diff.nrOfDiffs()).toBe(4);
+//   expect(diff.foundDiff()).toBe(true);
+//   expectContainsChange(diff, 'cdk.out.2/new.template.json', 'new', 'template');
+//   expectContainsChange(diff, 'cdk.out.1/subdir/sub2.template.json', 'deleted', 'template');
+//   const diff1 = expectContainsChange(diff, '/subdir/sub.template.json', 'changed', 'template');
+//   const diff2 = expectContainsChange(diff, '/base.template.json', 'changed', 'template');
+//   expect(diff1?.changes).not.toBeUndefined();
+//   if (diff1?.changes) {
+//     expectContainsChange(diff1.changes, 'ResourceY', 'deleted', 'resource');
+//     expectContainsChange(diff1.changes, 'ResourceY', 'deleted', 'resource');
+//   }
+//   expect(diff2?.changes).not.toBeUndefined();
+//   if (diff2?.changes) {
+//     expectContainsChange(diff2.changes, 'ResourceB', 'deleted', 'resource');
+//     expectContainsChange(diff2.changes, 'ResourceC', 'new', 'resource');
+//   }
+// });

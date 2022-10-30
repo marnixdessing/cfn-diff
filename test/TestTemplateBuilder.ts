@@ -12,12 +12,14 @@ export class TestTemplateBuilder {
     return this;
   }
 
-  addResource(identifier: string, type: string) {
+  addResource(identifier: string, type: string, data?: any) {
     if (!this.Resources) {
       this.Resources = {};
     }
+
     this.Resources[identifier] = {
-      type,
+      Type: type,
+      ...data,
     };
     return this;
   }

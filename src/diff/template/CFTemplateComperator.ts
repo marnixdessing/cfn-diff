@@ -1,7 +1,7 @@
 import { compareLists } from 'compare-lists';
 import { diff as calculateDiff } from 'deep-object-diff';
-import { ComparisonResults } from '../compare/ComparisonResult';
-import { CFTemplate } from './CFTemplate';
+import { TemplateResult } from '../compare/ComparisonResult';
+import { CFTemplate, CFTemplatePart } from './CFTemplate';
 
 export interface CFTemplateComperatorProps {
   /**
@@ -21,7 +21,8 @@ export class CFTemplateComperator {
   private templateA: CFTemplate;
   private templateB: CFTemplate;
 
-  private results = new ComparisonResults();
+  //private results = new ComparisonResults();
+  private r: TemplateResult[] = [];
 
   constructor(props: CFTemplateComperatorProps) {
     this.templateA = props.templateA;
@@ -29,83 +30,154 @@ export class CFTemplateComperator {
   }
 
   getResults() {
-    return this.results;
+    return this.r;
   }
 
   compare() {
     return this
+      .compareVersion()
+      .compareDescription()
       .compareOutputs()
       .compareRules()
       .compareParameters()
-      .compareReousrces()
-      .results;
+      .compareResources()
+      .compareConditions()
+      .compareMappings()
+      .compareMetadata()
+      .compareTransform()
+      .r;
   }
 
-  compareOutputs(): CFTemplateComperator {
-    this.compareObjects(this.templateA.getOutputs(), this.templateB.getOutputs(), 'output');
+  compareVersion(): CFTemplateComperator {
+    const a = this.templateA.getVersion();
+    const b = this.templateB.getVersion();
+    this.compareProperty(a, b, 'version', CFTemplatePart.VERSION);
     return this;
   }
 
-  compareRules(): CFTemplateComperator {
-    this.compareObjects(this.templateA.getRules(), this.templateB.getRules(), 'rule');
+  compareDescription(): CFTemplateComperator {
+    const a = this.templateA.getDescription();
+    const b = this.templateB.getDescription();
+    this.compareProperty(a, b, 'description', CFTemplatePart.DESCRIPTION);
+    return this;
+  }
+
+  compareOutputs(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.OUTPUTS);
+    return this;
+  }
+
+  compareMappings(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.MAPPINGS);
+    return this;
+  }
+
+  compareConditions(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.CONDITIONS);
+    return this;
+  }
+
+  compareMetadata(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.METADATA);
     return this;
   }
 
   compareParameters(): CFTemplateComperator {
-    this.compareObjects(this.templateA.getParameters(), this.templateB.getParameters(), 'parameter');
+    this.compareObjects(CFTemplatePart.PARAMETERS);
     return this;
   }
 
-  compareReousrces(): CFTemplateComperator {
-    this.compareObjects(this.templateA.getResources(), this.templateB.getResources(), 'resource');
+  compareRules(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.RULES);
     return this;
   }
 
-  private compareObjects(objA: any, objB: any, type: string) {
+  compareResources(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.RESOURCES);
+    return this;
+  }
+
+  compareTransform(): CFTemplateComperator {
+    this.compareObjects(CFTemplatePart.TRANFORM);
+    return this;
+  }
+
+  private compareProperty(a: any, b: any, identifier: string, part: CFTemplatePart) {
+    if (a != b) {
+      this.r.push({
+        identifier: identifier,
+        type: part,
+        a,
+        b,
+      });
+    }
+    return this;
+  }
+
+  private compareObjects(part: CFTemplatePart) {
+
+    const objA = this.templateA.getPart(part);
+    const objB = this.templateB.getPart(part);
 
     if (objA == undefined && objB == undefined) {
       return;
     } else if (objA == undefined && objB != undefined) {
-      this.allChangedFromObject(objB, true, type);
+      this.allChangedFromObject(objB, true, part);
       return;
     } else if (objA != undefined && objB == undefined) {
-      this.allChangedFromObject(objA, false, type);
+      this.allChangedFromObject(objA, false, part);
       return;
     }
 
     const keysA = Object.keys(objA);
     const keysB = Object.keys(objB);
 
+    if (process.env.DEBUG) {
+      console.debug(objA, objB);
+      console.debug('KEYS A', keysA);
+      console.debug('KEYS B', keysB);
+    }
+
     compareLists({
       left: keysA,
       right: keysB,
       compare: (left, right) => left.localeCompare(right),
-      onMissingInLeft: right => this.results.addNew(right, type),
-      onMissingInRight: left => this.results.addDeleted(left, type),
-      onMatch: key => this.deepCheck(objA[key], objB[key], key, type),
+      onMissingInLeft: right => this.registerNewOrDeleted(right, part, undefined, objB[right]),
+      onMissingInRight: left => this.registerNewOrDeleted(left, part, objA[left], undefined),
+      onMatch: key => this.deepCheck(objA[key], objB[key], key, part),
     });
   }
 
-  allChangedFromObject(obj:any, isNew:boolean, type:string) {
+  registerNewOrDeleted(identifier: string, type: CFTemplatePart, a?: any, b?: any) {
+    if (process.env.DEBUG) {
+      console.debug('Diff found', identifier, type, a, b );
+    }
+    this.r.push({ identifier, type, a, b });
+  }
+
+  allChangedFromObject(obj: any, isNew: boolean, type: CFTemplatePart) {
     const keys = Object.keys(obj);
     keys.forEach(k => {
-      if (isNew) {
-        this.results.addNew(k, type);
-      } else {
-        this.results.addDeleted(k, type);
-      }
+      this.r.push({
+        identifier: k,
+        type,
+        a: isNew ? undefined : obj[k],
+        b: isNew ? obj[k] : undefined,
+      });
     });
   }
 
-  deepCheck(objA: any, objB: any, key: string, description: string) {
+  deepCheck(objA: any, objB: any, key: string, type: CFTemplatePart) {
     const diff = calculateDiff(objA, objB);
-
     if (Object.keys(diff).length === 0) {
       return;
     }
-
-    this.results.addChanged(key, description, [], JSON.stringify(diff, null, 4));
-
+    this.r.push({
+      a: objA,
+      b: objB,
+      identifier: key,
+      type,
+    });
   }
 
 }

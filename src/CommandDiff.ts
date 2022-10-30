@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+// import fs from 'fs';
+// import path from 'path';
 import { Argv } from 'yargs';
 import { Command } from './Command';
 import { CloudAssemblyComperator } from './diff/CloudAssemblyComperator';
@@ -47,6 +47,8 @@ export class CommandDiff extends Command {
 
   run(args : any) {
 
+    process.env.DEBUG = 'true';
+
     if (!args.silent) {
       console.log('Comparing cloud assembly directories:');
       console.log('A: ', args.CloudassemblydirectoryA);
@@ -60,15 +62,15 @@ export class CommandDiff extends Command {
 
     var output = ComparisonResultFormatter.format(diff, args.format);
 
-    if (args.output) {
-      const p = path.resolve(args.output);
-      fs.writeFileSync(p, output);
-    } else if (!args.silent) {
-      console.log('\nComparison results:');
-      console.log(output);
-    }
+    //if (args.output) {
+    //  const p = path.resolve(args.output);
+    //  fs.writeFileSync(p, output);
+    //} else if (!args.silent) {
+    console.log('\nComparison results:');
+    console.log(JSON.stringify(diff, null, 4));
+    //}
 
-    return diff.foundDiff() ? 1 : 0;
+    return diff?.length > 0 ? 1 : 0;
   }
 
 }
