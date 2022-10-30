@@ -1,6 +1,6 @@
 import { compareLists } from 'compare-lists';
 import { diff as calculateDiff } from 'deep-object-diff';
-import { TemplateResult } from '../compare/ComparisonResult';
+import { TemplateResult } from '../result/ComparisonResult';
 import { CFTemplate, CFTemplatePart } from './CFTemplate';
 
 export interface CFTemplateComperatorProps {

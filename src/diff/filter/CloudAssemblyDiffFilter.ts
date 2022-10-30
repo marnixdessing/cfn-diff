@@ -3,7 +3,7 @@ import {
   cloudAssemblyChangeType,
   CloudAssemblyResult,
   templateChangeType,
-} from '../compare/ComparisonResult';
+} from '../result/ComparisonResult';
 import { CFTemplatePart } from '../template/CFTemplate';
 
 export interface FilterOptions {

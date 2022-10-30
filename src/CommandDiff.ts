@@ -3,7 +3,7 @@
 import { Argv } from 'yargs';
 import { Command } from './Command';
 import { CloudAssemblyComperator } from './diff/CloudAssemblyComperator';
-import { ComparisonResultFormatter } from './diff/compare/ComparisonResultFormatter';
+import { ComparisonResultFormatter } from './diff/result/ComparisonResultFormatter';
 
 /**
  * Define the diff commando for cli

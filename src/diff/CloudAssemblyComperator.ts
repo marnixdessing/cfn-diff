@@ -1,7 +1,7 @@
 import path from 'path';
 import { compareLists } from 'compare-lists';
 import { CloudAssemblyUtil } from './CloudAssemblyUtil';
-import { CloudAssemblyResult } from './compare/ComparisonResult';
+import { CloudAssemblyResult } from './result/ComparisonResult';
 import { CFTemplate } from './template/CFTemplate';
 import { CFTemplateComperator } from './template/CFTemplateComperator';
 

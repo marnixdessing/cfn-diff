@@ -15,7 +15,7 @@ export interface TemplateResult extends Filtered {
   b?: any;
   identifier: string;
   type: CFTemplatePart;
-  warning?: string;
+  warnings?: string[];
 }
 
 export interface CloudAssemblyResult extends Filtered {

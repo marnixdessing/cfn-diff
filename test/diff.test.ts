@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { CloudAssemblyComperator } from '../src/diff/CloudAssemblyComperator';
 // import { ChangeType } from '../src/diff/compare/ComparisonResult';
-import { ComparisonResultFormatter } from '../src/diff/compare/ComparisonResultFormatter';
+import { ComparisonResultFormatter } from '../src/diff/result/ComparisonResultFormatter';
 // import { ComparisonResults, ComparisonResult } from '../src/diff/compare/ComparisonResult';
 // import { CFTemplate } from '../src/diff/template/CFTemplate';
 // import { CFTemplateComperator } from '../src/diff/template/CFTemplateComperator';
@@ -92,12 +92,12 @@ beforeAll(() => {
 
   // Fill cdk.out dirs!
   new TestTemplateBuilder() // Template in main dir
-    .addResource('ResourceA', 'AWS::S3::Bucket', { prop1: 123 })
+    .addResource('ResourceA', 'AWS::S3::Bucket', { BucketName: '123' })
     .addResource('ResourceB', 'AWS::CF::Dummy')
     .save(CLOUD_ASSEMBLY_OUT_DIR(1) + '/base.template.json');
 
   new TestTemplateBuilder() // Changed compared to cdk.out.1
-    .addResource('ResourceA', 'AWS::S3::Bucket', { prop1: 'bla' })
+    .addResource('ResourceA', 'AWS::S3::Bucket', { BucketName: 'bla' })
     .addResource('ResourceC', 'AWS::CF::Dummy')
     .save(CLOUD_ASSEMBLY_OUT_DIR(2) + '/base.template.json');
 
