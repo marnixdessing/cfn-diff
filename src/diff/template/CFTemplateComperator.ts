@@ -1,7 +1,7 @@
 import { compareLists } from 'compare-lists';
 import { TemplateResult } from '../result/ComparisonResult';
-import { CFTemplate, CFTemplatePart } from './CFTemplate';
 import { CFResourceComperator } from './CFResourceComperator';
+import { CFTemplate, CFTemplatePart } from './CFTemplate';
 
 export interface CFTemplateComperatorProps {
   /**
@@ -148,9 +148,6 @@ export class CFTemplateComperator {
   }
 
   registerNewOrDeleted(identifier: string, type: CFTemplatePart, a?: any, b?: any) {
-    if (process.env.DEBUG) {
-      console.debug('Diff found', identifier, type, a, b );
-    }
     this.r.push({ identifier, type, a, b });
   }
 
@@ -168,7 +165,7 @@ export class CFTemplateComperator {
 
   deepCheck(objA: any, objB: any, key: string, type: CFTemplatePart) {
     const diff = CFResourceComperator.compare(objA, objB);
-    if(diff.length == 0){
+    if (diff.length == 0) {
       return;
     }
     this.r.push({
@@ -176,7 +173,7 @@ export class CFTemplateComperator {
       b: objB,
       identifier: key,
       type,
-      changes: diff
+      changes: diff,
     });
   }
 

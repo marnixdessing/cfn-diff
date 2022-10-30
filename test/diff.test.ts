@@ -1,12 +1,9 @@
 import fs from 'fs';
 import { CloudAssemblyComperator } from '../src/diff/CloudAssemblyComperator';
-// import { ChangeType } from '../src/diff/compare/ComparisonResult';
-import { ComparisonResultFormatter } from '../src/diff/result/ComparisonResultFormatter';
-// import { ComparisonResults, ComparisonResult } from '../src/diff/compare/ComparisonResult';
-// import { CFTemplate } from '../src/diff/template/CFTemplate';
-// import { CFTemplateComperator } from '../src/diff/template/CFTemplateComperator';
-// import { CloudAssemblyDiffFilter } from '../src/diff/filter/CloudAssemblyDiffFilter';
+import { CloudAssemblyDiffFilter } from '../src/diff/filter/CloudAssemblyDiffFilter';
+import { Output } from '../src/diff/output/Output';
 import { ImpactPredictor } from '../src/diff/predict/Predict';
+import { ChangeType } from '../src/diff/result/ComparisonResult';
 import { TestTemplateBuilder } from './TestTemplateBuilder';
 
 const CLOUD_ASSEMBLY_DIR = './test/templates';
@@ -18,24 +15,6 @@ function createDir(dir: string) {
     fs.mkdirSync(dir, { recursive: true });
   }
 }
-
-// function expectContainsChange(diff: ComparisonResults | ComparisonResult[], identifier: string, changeType: string, type: string) {
-//   const input = diff instanceof ComparisonResults ? diff.getDiffs() : diff;
-//   const found = input.find(c => c.identifier.endsWith(identifier) && c.changeType == changeType && c.type == type);
-//   expect(found).not.toBeUndefined();
-//   return found;
-// }
-
-// function logDiff(diff:any) {
-//   console.log(JSON.stringify(diff, null, 4));
-// }
-
-// function compareTemplates(temp1: string, temp2:string) {
-//   return new CFTemplateComperator({
-//     templateA: new CFTemplate(CLOUD_ASSEMBLY_DIR + temp1),
-//     templateB: new CFTemplate(CLOUD_ASSEMBLY_DIR + temp2),
-//   }).compare();
-// }
 
 beforeAll(() => {
   // Create cloud assembly mockup data structure
@@ -128,18 +107,16 @@ beforeEach(() => {
 });
 
 test('cdk out', () => {
-  const diff = new CloudAssemblyComperator({
-    cloudAssemblyDirectoryA: CLOUD_ASSEMBLY_OUT_DIR(1),
-    cloudAssemblyDirectoryB: CLOUD_ASSEMBLY_OUT_DIR(2),
-  }).compare();
-  console.log(JSON.stringify(diff, null, 4));
+  const diffTree = CloudAssemblyComperator.compare(CLOUD_ASSEMBLY_OUT_DIR(1), CLOUD_ASSEMBLY_OUT_DIR(2));
 
-  ImpactPredictor.predict(diff);
+  CloudAssemblyDiffFilter.filter(diffTree, {
+    show: [ChangeType.CHANGED, ChangeType.DELETED, ChangeType.NEW],
+  });
 
-  const output1 = ComparisonResultFormatter.format(diff, 'text');
-  console.log(output1);
+  ImpactPredictor.predict(diffTree);
 
-
+  Output.output(diffTree, 'text');
+  Output.output(diffTree, 'json');
 });
 
 // test('Template comparator with same template twice', () => {

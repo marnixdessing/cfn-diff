@@ -4,7 +4,7 @@ import { ResourceResult } from '../result/ComparisonResult';
 export class CFResourceComperator {
 
   static compare(resourceA: any, resourceB: any) {
-    
+
     const result: ResourceResult[] = [];
 
     const propsA = resourceA?.Properties;
@@ -23,17 +23,18 @@ export class CFResourceComperator {
       compare: (left, right) => left.localeCompare(right),
       onMissingInLeft: right => result.push({
         property: right,
-        b: resourceB[right],
+        b: propsB[right],
       }),
       onMissingInRight: left => result.push({
         property: left,
-        a: resourceA[left],
+        a: propsA[left],
       }),
       onMatch: key => {
-        const a = resourceA[key].Properties; 
-        const b = resourceB[key].Properties; 
-        if(JSON.stringify(a) != JSON.stringify(b)){
-          result.push({property: key, a, b});
+        console.log('Key', key);
+        const a = propsA[key];
+        const b = propsB[key];
+        if (JSON.stringify(a) != JSON.stringify(b)) {
+          result.push({ property: key, a, b });
         }
       },
     });

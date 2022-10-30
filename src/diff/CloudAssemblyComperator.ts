@@ -26,19 +26,11 @@ export interface CloudAssemblyComperatorProps {
  */
 export class CloudAssemblyComperator {
 
-  private props: CloudAssemblyComperatorProps;
-
-  constructor(props: CloudAssemblyComperatorProps) {
-    this.props = props;
-    this.props.cloudAssemblyDirectoryA = path.resolve(this.props.cloudAssemblyDirectoryA);
-    this.props.cloudAssemblyDirectoryB = path.resolve(this.props.cloudAssemblyDirectoryB);
-  }
-
-  public compare() {
+  static compare(cloudAssemblyDirectoryA: string, cloudAssemblyDirectoryB: string) {
 
     const results: CloudAssemblyResult[] = [];
-    const templatePathsA = CloudAssemblyUtil.getTemplatePaths(this.props.cloudAssemblyDirectoryA);
-    const templatePathsB = CloudAssemblyUtil.getTemplatePaths(this.props.cloudAssemblyDirectoryB);
+    const templatePathsA = CloudAssemblyUtil.getTemplatePaths(cloudAssemblyDirectoryA);
+    const templatePathsB = CloudAssemblyUtil.getTemplatePaths(cloudAssemblyDirectoryB);
 
     if (process.env.DEBUG) {
       console.debug('Templates A', templatePathsA);
@@ -51,13 +43,13 @@ export class CloudAssemblyComperator {
       compare: (left, right) => path.basename(left).localeCompare(path.basename(right)), // Only compare file names
       onMissingInLeft: right => results.push({
         pathB: right,
-        basename: right.replace(this.props.cloudAssemblyDirectoryB, ''),
+        basename: right.replace(cloudAssemblyDirectoryB, ''),
       }),
       onMissingInRight: left => results.push({
         pathA: left,
-        basename: left.replace(this.props.cloudAssemblyDirectoryA, ''),
+        basename: left.replace(cloudAssemblyDirectoryA, ''),
       }),
-      onMatch: file => this.checkTemplate(this.props, file, results),
+      onMatch: file => this.checkTemplate(cloudAssemblyDirectoryA, cloudAssemblyDirectoryB, file, results),
     });
 
     return results;
@@ -69,13 +61,13 @@ export class CloudAssemblyComperator {
    * @param template the path to the template
    * @param results the results collection object
    */
-  private checkTemplate(props: CloudAssemblyComperatorProps, template: string, results: CloudAssemblyResult[]) {
-    const fileBase = template.replace(props.cloudAssemblyDirectoryA, ''); // cannot use path.basename(template); as the file may be in a subdirectory.
-    const a = new CFTemplate(path.join(props.cloudAssemblyDirectoryA, fileBase));
-    const b = new CFTemplate(path.join(props.cloudAssemblyDirectoryB, fileBase));
+  private static checkTemplate(cloudAssemblyDirectoryA: string, cloudAssemblyDirectoryB: string, template: string, results: CloudAssemblyResult[]) {
+    const fileBase = template.replace(cloudAssemblyDirectoryA, ''); // cannot use path.basename(template); as the file may be in a subdirectory.
+    const a = new CFTemplate(path.join(cloudAssemblyDirectoryA, fileBase));
+    const b = new CFTemplate(path.join(cloudAssemblyDirectoryB, fileBase));
 
     if (process.env.DEBUG) {
-      console.debug('Checking templates for diff', fileBase, props.cloudAssemblyDirectoryA, props.cloudAssemblyDirectoryB);
+      console.debug('Checking templates for diff', fileBase, cloudAssemblyDirectoryA, cloudAssemblyDirectoryB);
     }
 
     const templateResults = new CFTemplateComperator({

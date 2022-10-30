@@ -1,4 +1,4 @@
-import { CloudAssemblyResult, templateChangeType, TemplateResult } from './ComparisonResult';
+import { cloudAssemblyChangeType, CloudAssemblyResult, ResourceResult, templateChangeType, TemplateResult } from './ComparisonResult';
 
 export class ComparisonResultFormatter {
 
@@ -13,7 +13,8 @@ export class ComparisonResultFormatter {
     const space = this.SPACE.repeat(indent);
     for (let result of results) {
       if (result.exclude) continue;
-      const line = `${space}[${result.changes}] ${result.basename}`;
+      const changeType = cloudAssemblyChangeType(result);
+      const line = `${space}[${changeType}] ${result.basename}`;
       lines.push(line);
 
       if (result.changes) { // changes
@@ -31,6 +32,23 @@ export class ComparisonResultFormatter {
       if (result.exclude) continue;
       const changeType = templateChangeType(result);
       const line = `${space}[${changeType}] ${result.identifier}`;
+      lines.push(line);
+      if (result.changes) { // changes
+        const t = this.formatResourceResult(result.changes, indent+1);
+        lines.push(t);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  private static formatResourceResult(results: ResourceResult[], indent: number) {
+    const space = this.SPACE.repeat(indent);
+    const lines = [];
+    for (let property of results) {
+      if (property.exclude) continue;
+      //const changeType = resourcePropertyChangeType(property);
+      const warning = property.warning ?? '';
+      const line = `${space}* ${warning} (property=${property.property})`;
       lines.push(line);
     }
     return lines.join('\n');

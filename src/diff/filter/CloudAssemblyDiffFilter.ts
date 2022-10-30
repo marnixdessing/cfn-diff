@@ -2,9 +2,10 @@ import {
   ChangeType,
   cloudAssemblyChangeType,
   CloudAssemblyResult,
+  CloudAssemblyResultWalker,
   templateChangeType,
+  TemplateResult,
 } from '../result/ComparisonResult';
-import { CFTemplatePart } from '../template/CFTemplate';
 
 export interface FilterOptions {
   resources?: ResourceFilterOptions;
@@ -30,69 +31,91 @@ export interface ResourceFilterOptions {
 
 export class CloudAssemblyDiffFilter {
 
-
   static filter(result: CloudAssemblyResult[], filterOptions: FilterOptions) {
-
-    result = this.showFilter(result, filterOptions);
-
+    new ShowFilter(filterOptions).walk(result);
     if (filterOptions.resources) {
-      result = this.resourceFilter(result, filterOptions.resources);
+      new ResourceFilter(filterOptions).walk(result);
     }
-    return result;
   }
 
-  static showFilter(result: CloudAssemblyResult[], filterOptions: FilterOptions) {
-    for (let i = 0; i < result.length; i++) {
-      const template = result[i];
-      console.debug(
-        template.basename,
-        filterOptions.show,
-        cloudAssemblyChangeType(template),
-        filterOptions.show && !filterOptions.show.includes(cloudAssemblyChangeType(template)),
-      );
-      if (filterOptions.show && !filterOptions.show.includes(cloudAssemblyChangeType(template))) {
-        // Remove thing from results
-        result[i].exclude = true;
-        continue;
-      }
-      const templateChanges = template.changes;
-      if (!templateChanges) continue;
-      for (let j = 0; j < templateChanges.length; j++) {
-        const change = templateChanges[j];
-        const changeType = templateChangeType(change);
-        if (filterOptions.resources?.show && !filterOptions.resources.show.includes(changeType)) {
-          change.exclude = true;
-          continue;
-        }
-      }
-    }
-    return result;
+}
+
+class ShowFilter extends CloudAssemblyResultWalker {
+
+  private filterOptions: FilterOptions;
+
+  constructor(filterOptions: FilterOptions) {
+    super();
+    this.filterOptions = filterOptions;
   }
 
-  static resourceFilter(result: CloudAssemblyResult[], filterOptions: ResourceFilterOptions) {
-    for (let i = 0; i < result.length; i++) {
-      const template = result[i];
-      const templateChanges = template.changes;
-
-      if (!templateChanges) continue;
-
-      for (let j = 0; j < templateChanges.length; j++) {
-        const change = templateChanges[j];
-        if (change.type == CFTemplatePart.RESOURCES) {
-          const cfType = change.a ? change.a.Type : change.b.Type;
-          if (filterOptions.service && !cfType.includes(filterOptions.service)) {
-            change.exclude = true; // Different service than filtered on
-          } else if (filterOptions.resourceType && cfType != filterOptions.resourceType) {
-            change.exclude = true; // Different resource type than filtered on
-          }
-        }
-      }
-
-      const allExcluded = templateChanges ? !templateChanges.find(c => !c.exclude) != undefined : true;
-      if (allExcluded) template.exclude = true;
-
+  beginTemplateCheck(template: CloudAssemblyResult): void {
+    const changeType = cloudAssemblyChangeType(template);
+    if (this.filterOptions.show && !this.filterOptions.show.includes(changeType)) {
+      template.exclude = true;
     }
-    return result;
+  }
+
+  endTemplateCheck(template: CloudAssemblyResult): void {
+    if (template.changes) {
+      const shown = template.changes.filter(c => !c.exclude);
+      if (shown.length == 0) template.exclude = true;
+    }
+  }
+
+  beginTemplateChangeCheck(_template: CloudAssemblyResult, change: TemplateResult): void {
+    const changeType = templateChangeType(change);
+    if (this.filterOptions.resources?.show && !this.filterOptions.resources.show.includes(changeType)) {
+      change.exclude = true;
+    }
+  }
+
+  endTemplateChangeCheck(): void {
+    return;
+  }
+
+  resourcePropertyCheck(): void {
+    return;
+  }
+
+}
+
+class ResourceFilter extends CloudAssemblyResultWalker {
+
+  private filterOptions: FilterOptions;
+
+  constructor(filterOptions: FilterOptions) {
+    super();
+    this.filterOptions = filterOptions;
+  }
+
+  beginTemplateCheck(): void {
+    return;
+  }
+
+  endTemplateCheck(): void {
+    return;
+  }
+
+  beginTemplateChangeCheck(_template: CloudAssemblyResult, change: TemplateResult): void {
+    if (this.filterOptions.resources?.service) { // Filter on service
+      if (!change.type.includes(this.filterOptions.resources?.service)) {
+        change.exclude = true;
+      }
+    }
+    if (this.filterOptions.resources?.resourceType) { // Filter on type
+      if (change.type != (this.filterOptions.resources?.resourceType)) {
+        change.exclude = true;
+      }
+    }
+  }
+
+  endTemplateChangeCheck(): void {
+    return;
+  }
+
+  resourcePropertyCheck(): void {
+    return;
   }
 
 }

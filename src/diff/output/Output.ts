@@ -1,42 +1,42 @@
-import { CloudAssemblyResult } from "../result/ComparisonResult";
 import * as fs from 'fs';
 import * as yaml from 'yaml';
-import { ComparisonResultFormatter } from "../result/ComparisonResultFormatter";
+import { CloudAssemblyResult } from '../result/ComparisonResult';
+import { ComparisonResultFormatter } from '../result/ComparisonResultFormatter';
 
 type Format = 'json' | 'yaml' | 'text'
 
 export class Output {
 
-    output(templates: CloudAssemblyResult[], format: Format, path?: string){
+  static output(templates: CloudAssemblyResult[], format: Format, path?: string) {
 
-        let output = undefined;
-        if(format == 'text'){
-            output = this.toText(templates);
-        } else if(format == 'yaml'){
-            output = this.toYaml(templates);
-        } else {
-            output = this.toJson(templates);
-        }
-
-        if(path){
-            fs.writeFileSync(path, output);
-        } else {
-            console.log(output);
-        }
+    let output = undefined;
+    if (format == 'text') {
+      output = this.toText(templates);
+    } else if (format == 'yaml') {
+      output = this.toYaml(templates);
+    } else {
+      output = this.toJson(templates);
     }
 
-    toJson(templates: CloudAssemblyResult[]) {
-        return JSON.stringify(templates, null, 4);
+    if (path) {
+      fs.writeFileSync(path, output);
+    } else {
+      console.log(output);
     }
+    return output;
+  }
 
-    toYaml(templates: CloudAssemblyResult[]) {
-        return yaml.stringify(templates);
-    }
+  static toJson(templates: CloudAssemblyResult[]) {
+    return JSON.stringify(templates, null, 4);
+  }
 
-    toText(templates: CloudAssemblyResult[]) {
-        return ComparisonResultFormatter.format(templates);
-    }
+  static toYaml(templates: CloudAssemblyResult[]) {
+    return yaml.stringify(templates);
+  }
 
-    
+  static toText(templates: CloudAssemblyResult[]) {
+    return ComparisonResultFormatter.format(templates);
+  }
+
 
 }

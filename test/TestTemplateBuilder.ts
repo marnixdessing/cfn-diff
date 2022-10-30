@@ -19,7 +19,7 @@ export class TestTemplateBuilder {
 
     this.Resources[identifier] = {
       Type: type,
-      ...data,
+      Properties: data,
     };
     return this;
   }
