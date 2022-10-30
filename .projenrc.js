@@ -15,6 +15,7 @@ const project = new typescript.TypeScriptProject({
     'deep-object-diff',
     'glob',
     '@types/glob',
+    'yaml',
   ],
   gitignore: [
     'test/templates',

@@ -1,7 +1,7 @@
 import { compareLists } from 'compare-lists';
-import { diff as calculateDiff } from 'deep-object-diff';
 import { TemplateResult } from '../result/ComparisonResult';
 import { CFTemplate, CFTemplatePart } from './CFTemplate';
+import { CFResourceComperator } from './CFResourceComperator';
 
 export interface CFTemplateComperatorProps {
   /**
@@ -21,7 +21,6 @@ export class CFTemplateComperator {
   private templateA: CFTemplate;
   private templateB: CFTemplate;
 
-  //private results = new ComparisonResults();
   private r: TemplateResult[] = [];
 
   constructor(props: CFTemplateComperatorProps) {
@@ -168,8 +167,8 @@ export class CFTemplateComperator {
   }
 
   deepCheck(objA: any, objB: any, key: string, type: CFTemplatePart) {
-    const diff = calculateDiff(objA, objB);
-    if (Object.keys(diff).length === 0) {
+    const diff = CFResourceComperator.compare(objA, objB);
+    if(diff.length == 0){
       return;
     }
     this.r.push({
@@ -177,6 +176,7 @@ export class CFTemplateComperator {
       b: objB,
       identifier: key,
       type,
+      changes: diff
     });
   }
 

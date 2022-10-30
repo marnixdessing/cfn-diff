@@ -74,7 +74,6 @@ class ImpactPredictorWalker extends CloudAssemblyResultWalker {
         },
       });
 
-      change.warnings = warnings;
 
     }
   }
