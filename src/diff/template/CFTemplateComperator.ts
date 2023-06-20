@@ -1,7 +1,7 @@
 import { compareLists } from 'compare-lists';
 import { diff as calculateDiff } from 'deep-object-diff';
-import { ComparisonResults } from '../compare/ComparisonResult';
 import { CFTemplate } from './CFTemplate';
+import { ComparisonResults } from '../compare/ComparisonResult';
 
 export interface CFTemplateComperatorProps {
   /**

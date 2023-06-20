@@ -1,10 +1,10 @@
 
 import fs from 'fs';
+import { TestTemplateBuilder } from './TestTemplateBuilder';
 import { CloudAssemblyComperator } from '../src/diff/CloudAssemblyComperator';
 import { ComparisonResults, ComparisonResult } from '../src/diff/compare/ComparisonResult';
 import { CFTemplate } from '../src/diff/template/CFTemplate';
 import { CFTemplateComperator } from '../src/diff/template/CFTemplateComperator';
-import { TestTemplateBuilder } from './TestTemplateBuilder';
 
 const CLOUD_ASSEMBLY_DIR = './test/templates';
 const CLOUD_ASSEMBLY_OUT_DIR = (nr : number) => `./test/templates/cdk.out.${nr}`;
